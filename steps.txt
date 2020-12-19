@@ -1,0 +1,24 @@
+___settingUp postgres___
+create user gopal0921 with encrypted password 'postgres@0921'
+created twitterdb
+grant all privileges on database twitterdb to gopal0921
+
+___intalling psycopg2___
+sudo apt install python3.7-dev libpq-dev
+pipenv install psycopg2
+
+___setting up postgres on django___ 
+{% comment %} remember semicolon are colon without which no flow {% endcomment %}
+postgres=# create database twitterdb;
+ERROR:  database "twitterdb" already exists
+postgres=# create user gopal0921 with PASSWORD 'pass';
+CREATE ROLE
+postgres=# alter role gopal0921 set client_encoding to 'utf-8';
+ALTER ROLE
+postgres=# alter role gopal0921 set timezone to 'UTC';
+ALTER ROLE
+postgres=# alter role gopal0921 set default_transaction_isolation to 'read committed';
+ALTER ROLE
+postgres=# grant all privileges on database twitterdb to gopal0921;
+GRANT
+postgres=# \q

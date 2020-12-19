@@ -25,7 +25,10 @@ SECRET_KEY = '1bwvbec^oma&p029ujl623%#st6&%$^ab3#&1@$hdx%mh)-62%'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# . in front of the url+domain will allow all urls with that Url+domain
+ALLOWED_HOSTS = ['127.0.0.1', '.mydomain.com']
+LOGIN_URL = "/login"
+MAX_TWEET_LENGTH = 261
 
 
 # Application definition
@@ -37,6 +40,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 3rd Party
+    
+    # internal(Apps and all)
+    'tweets',
 ]
 
 MIDDLEWARE = [
@@ -54,7 +61,7 @@ ROOT_URLCONF = 'twitter.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR,'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

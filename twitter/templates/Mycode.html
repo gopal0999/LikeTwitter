@@ -1,0 +1,39 @@
+<!-- {% extends 'base.html' %}
+
+{% block head_title %}This amazing!!!{% endblock head_title%}
+
+{% block content%}
+
+Your Tweeter Guys
+
+<div id = 'tweets'>
+    Loading...
+</div>
+
+<script>
+    const tweetsElement = document.getElementById("tweets")
+    
+    // // making an ajax request to and getting our data without reloading
+    const loadData = async () =>{
+        const response = await fetch('http://127.0.0.1:8000/tweets')
+        // if we dont write await above it will go further without executing reponse.json()
+        const data =  await response.json()
+        // console.log(data)
+        let tweets = data.response
+        tweets.forEach(tweet => {
+            console.log(tweet)
+            let tweetElement = document.createElement('div');
+            tweetElement.innerHTML = tweet.content;
+            tweetElement.id = `tweet-${tweet.id}`;
+            tweetsElement.append(tweetElement);
+        })
+
+    };  
+    
+    loadData();
+    // console.log(tweets);
+    tweetsElement.innerHTML = ""
+
+</script>
+
+{% endblock content%} -->
