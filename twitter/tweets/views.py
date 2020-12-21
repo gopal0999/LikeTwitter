@@ -6,6 +6,7 @@ from django.utils.http import is_safe_url
 
 from .forms import TweetForm
 from .models import Tweet
+from .serializers import TweetSerializer
 
 ALLOWED_HOSTS = settings.ALLOWED_HOSTS
 
@@ -14,7 +15,18 @@ def home_view(request, *args, **kwargs):
     # return HttpResponse(f"<h1>HELLO TWITTER {kwargs['tweet_id']}</h1>")
     return render(request,"pages/home.html", context={}, status=200)
 
-def tweet_create_view(request, *args, **kwargs):
+def tweet_create_view(request):
+    # print(request.POST)
+    serializer = TweetSerializer(data=request.POST or None)
+    if serializer.is_valid():
+        print(request.user)# gns
+        obj = serializer.save(user = request.user)
+        print("@@obj@@",obj) #@@obj@@ again
+        print(serializer.data)
+        return JsonResponse(serializer.data, status = 201)
+    return JsonResponse({}, status=400)
+
+def tweet_create_view_pure_django(request, *args, **kwargs):
     user = request.user
     if not user.is_authenticated:
         user = None
@@ -45,6 +57,9 @@ def tweet_list_view(request, *args, **kwargs):
     return json data
     """
     qs = Tweet.objects.all()
+    # likes are coming back because of this 
+    # because serialize is defined in the models.py Tweet model
+    # and there while serializing it return a random number for like
     tweets_list = [x.serialize() for x in qs]
     data = {
         "isUser": False,
