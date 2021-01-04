@@ -4,27 +4,101 @@ from django.http import HttpResponse,Http404,JsonResponse
 from django.shortcuts import render,redirect
 from django.utils.http import is_safe_url
 
+from rest_framework.decorators import api_view, permission_classes,authentication_classes
+# by default included in the settings
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+
 from .forms import TweetForm
 from .models import Tweet
-from .serializers import TweetSerializer
+from .serializers import TweetSerializer, TweetActionSerializer, TweetCreateSerializer
 
 ALLOWED_HOSTS = settings.ALLOWED_HOSTS
 
 # Create your views here.
 def home_view(request, *args, **kwargs):
-    # return HttpResponse(f"<h1>HELLO TWITTER {kwargs['tweet_id']}</h1>")
     return render(request,"pages/home.html", context={}, status=200)
 
+@api_view(['POST'])
+@authentication_classes([SessionAuthentication]) # by default in rest_framework
+@permission_classes([IsAuthenticated])
 def tweet_create_view(request):
-    # print(request.POST)
-    serializer = TweetSerializer(data=request.POST or None)
+    serializer = TweetCreateSerializer(data=request.POST or None)
     if serializer.is_valid():
-        print(request.user)# gns
-        obj = serializer.save(user = request.user)
-        print("@@obj@@",obj) #@@obj@@ again
-        print(serializer.data)
+        serializer.save(user = request.user)
         return JsonResponse(serializer.data, status = 201)
     return JsonResponse({}, status=400)
+
+@api_view(['GET'])
+def tweet_list_view(request, *args, **kwargs):
+    qs = Tweet.objects.all()
+    # To serialize a queryset or list of objects instead of a single object 
+    # instance, you should pass the many=True flag when instantiating the serializer.
+    # You can then pass a queryset or list of objects to be serialized.
+    serializedTweets = TweetSerializer(qs, many=True)
+    # print(serializedTweets.data)
+    # return JsonResponse(data)
+    # instead of JsonResponse will use just Response imported from rest_framework
+    return Response(serializedTweets.data, status=200)
+
+@api_view(['GET'])
+def tweet_detail_view(request, tweet_id, *args, **kwargs):
+    qs = Tweet.objects.filter(id = tweet_id)
+    if not qs.exists():
+        return Response({},status=404)
+    obj = qs.first()
+    serialisedTweet = TweetSerializer(obj)
+    return Response(serialisedTweet.data, status=200)
+
+@api_view(['DELETE','POST'])
+@authentication_classes([SessionAuthentication]) # by default in rest_framework
+@permission_classes([IsAuthenticated])
+def tweet_delete_view(request, tweet_id, *args, **kwargs):
+    qs = Tweet.objects.filter(id = tweet_id)
+    if not qs.exists():
+        return Response({},status=404)
+    if request.user != qs.first().user:
+        return Response({'message':"unauthorised"},status=403)
+    obj = qs.first()
+    obj.delete()
+    return Response({"message":"Tweet Removed"}, status=200)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def tweet_action_view(request, *args, **kwargs):
+    '''
+    id is required.
+    Action options are: like, unlike, retweet
+    '''
+    # 400 40 bad request error was due to tweet_id in place of just id in serializers.py
+    serializer = TweetActionSerializer(data=request.data)
+    if serializer.is_valid(raise_exception=True):
+        data = serializer.validated_data
+        tweet_id = data.get("id")
+        action = data.get("action")
+        # sorry this is the content of the original tweet
+        content = data.get("content") #not this content will be used if we want to add something while retweeting any context
+        qs = Tweet.objects.filter(id=tweet_id)
+        if not qs.exists():
+            return Response({}, status=404)
+        obj = qs.first()
+        if action == "like":
+            obj.likes.add(request.user)
+            serializer = TweetSerializer(obj)
+            return Response(serializer.data, status=200)
+        elif action == "unlike":
+            obj.likes.remove(request.user)
+        elif action == "retweet":
+            new_tweet = Tweet.objects.create(
+                    user=request.user, 
+                    parent=obj,
+                    content=content,#therefore its used in retweet action
+                    )
+            serializer = TweetSerializer(new_tweet)
+            return Response(serializer.data, status=200)
+    return Response({}, status=200)
 
 def tweet_create_view_pure_django(request, *args, **kwargs):
     user = request.user
@@ -50,7 +124,7 @@ def tweet_create_view_pure_django(request, *args, **kwargs):
             return JsonResponse(form.errors, status = 400)
     return render(request, 'components/form.html', context={"form":form})
 
-def tweet_list_view(request, *args, **kwargs):
+def tweet_list_view_pure_django(request, *args, **kwargs):
     """
     REST API VIEW
     Consume by JavaScript or Swift/Java/iOS/Andriod
@@ -68,7 +142,7 @@ def tweet_list_view(request, *args, **kwargs):
     return JsonResponse(data)
 
 
-def tweet_detail_view(request, tweet_id, *args, **kwargs):
+def tweet_detail_view_pure_django(request, tweet_id, *args, **kwargs):
     """
     REST API VIEW
     Consume by JavaScript or Swift/Java/iOS/Andriod
